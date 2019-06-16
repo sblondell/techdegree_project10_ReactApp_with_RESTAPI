@@ -3,6 +3,7 @@ node_modules/
 markup/
 mockups/
 styles/
+client/api/node_modules
 
 #Files
 TODO
