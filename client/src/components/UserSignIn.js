@@ -1,14 +1,33 @@
-import React, { Component } from 'react';
+import React, {Component} from 'react';
+
+
 
 class UserSignIn extends Component {
+
     handle_cancel = e => {
         e.preventDefault();
         this.props.history.push("/courses");
     }
+
     handle_submit = e => {
         e.preventDefault();
-        this.props.sign_in(this.query.emailAddress.value, this.query.password.value);
-        this.props.history.push("/courses");
+        const formData = Array.from(new FormData(e.target));
+        const emailAddress = formData[0][1];
+        // const emailAddress = this.query.emailAddress;
+        const password = formData[1][1];
+        // const password = this.query.password;
+        const prevLoc = sessionStorage.getItem('previousLocation');
+
+        this.props.sign_in(emailAddress, password);
+        
+        if (prevLoc) {
+            setTimeout(() => {
+                this.props.history.push(prevLoc);
+                sessionStorage.clear();
+            }, 200);
+        } else {
+            this.props.history.goBack();
+        }
     }
 
     render() {

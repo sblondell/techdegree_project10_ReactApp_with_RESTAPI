@@ -1,7 +1,23 @@
-import React, { Component } from 'react';
+import React, {Component} from 'react';
+
+
 
 class UserSignUp extends Component {
-
+    constructor(props) {
+        super(props)
+    
+        this.state = {
+            allValid: true,
+            pendingNewUser: {
+                "firstName": "",
+                "lastName": "",
+                "emailAddress": "",
+                "password": "",
+                "confirmPassword": ""
+            }
+        }
+    }
+    
     handle_cancel = e => {
         e.preventDefault();
 		this.props.history.push("/courses");
@@ -9,11 +25,29 @@ class UserSignUp extends Component {
 
     handle_submit = e => {
         e.preventDefault();
+        
+        const formData = Array.from(new FormData(e.target));
+        let allowSubmit = true;
+        const firstName = formData[0][1];
+        const lastName = formData[1][1];
+        const emailAddress = formData[2][1];
+        const password = formData[3][1];
+        const confirmPassword = formData[4][1];
+
+
         const newUser = {
-            "firstName": "Chris",
-            "lastName": "Blondell",
-            "emailAddress": "Diddy@gma.net",
-            "password": "hold",
+            firstName,
+            lastName,
+            emailAddress,
+            password,
+            confirmPassword
+        }
+
+        // if any sign up values are empty
+        if (!firstName || !lastName || !emailAddress || !password || !confirmPassword) {
+            allowSubmit = false;
+            this.setState({ pendingNewUser: newUser, allValid: allowSubmit});
+            return null;
         }
 
         const myHeader = new Headers({
@@ -26,36 +60,81 @@ class UserSignUp extends Component {
             body: JSON.stringify(newUser)
         });
 
-        console.log(myRequest);
-
         fetch(myRequest)
             .then(res => {
                 if (res.status === 200) {
                     this.props.sign_in(newUser.emailAddress, newUser.password);
 		            this.props.history.push("/courses");
                 }
+            }).catch(err => {
+                console.error("There was a problem: " + err);
             });
-		// this.props.history.push("/courses");
     }
 
-    input_JSX_Element = (name, type) => {
+    /*
+     * Generates a presentable string in the form of "firstName" ==> "First Name".
+     * @params  {String}    name - the name of the string to be formatted
+     * @return  {String}    presentableString - the formatted string
+    */
+    make_string_presentable = name => {
         // Inserting a " "(space) character inbetween the 'name' value
         // "firstName" ==> "first Name"
-        let placeholder = name;
+        let presentableString = name;
+
         for (let char of name) {
             if (/[A-Z]/.test(char)){
                 let index = name.indexOf(char);
-                placeholder = name.substring(0, index) + " " + name.substring(index);
+                presentableString = name.substring(0, index) + " " + name.substring(index);
             }
         }
-        placeholder = placeholder[0].toUpperCase() + placeholder.substring(1);
+        // Capitalizing the first character
+        presentableString = presentableString[0].toUpperCase() + presentableString.substring(1);
 
+        return presentableString;
+    }
+
+    /*
+     * Generates a custom JSX <input> element.
+     * @params  {String}    name - the name associated with the input element
+     * @params  {String}    type - the type associated with the input element
+     * @return  {Object}    direct-return - a JSX <input> element
+    */
+    input_JSX_Element = (name, type) => {
         return <input
                     id={name}
                     name={name}
                     type={type}
-                    placeholder={placeholder}
+                    placeholder={this.make_string_presentable(name)}
                     />
+    }
+
+    /*
+     * Generates custom validation error messages to be displayed for the client.
+     * @params  {Object}    formObject - the data object needing validation
+     * @return  {Array}     customValidationMessages - an array of JSX <li> elements holding all validation error messages
+    */
+    generate_validation_errors = (formObject) => {
+        let customValidationMessages = [];
+        let uniqueIndexKey = 0;
+        const pendingUserKeys = Object.keys(formObject);
+
+        if (!this.state.allValid) {
+            // Generate "input required" validation messages
+            pendingUserKeys.forEach(key => {
+                let inputName = formObject[key];
+
+                // "confirmPassword" is a special case handled below
+                if (inputName === "" && key !== "confirmPassword") {
+                    customValidationMessages.push(<li key={uniqueIndexKey}>{this.make_string_presentable(key)} is required.</li>);
+                    uniqueIndexKey += 1;
+                }
+            });
+
+            if (formObject.password !== formObject.confirmPassword)
+                customValidationMessages.push(<li key={uniqueIndexKey}>Password and Confirmed Password do not match.</li>);
+        }
+
+        return customValidationMessages;
     }
 
     render() {
@@ -64,6 +143,18 @@ class UserSignUp extends Component {
                 <div className="grid-33 centered signin">
                     <h1>Sign Up</h1>
                     <div>
+                        <div>
+                            <div className="validation-errors">
+                                <ul>
+                                    {this.generate_validation_errors(this.state.pendingNewUser)}
+                                {/* <li style={this.should_hide("firstName")}>Please provide your First Name</li>
+                                <li style={this.should_hide("lastName")}>Please provide your Last Name</li>
+                                <li style={this.should_hide("emailAddress")}>Please provide an Email Address</li>
+                                <li style={this.should_hide("password")}>Please provide a Password</li>
+                                <li style={this.should_hide("confirmPassword")}>Please confirm your Password</li> */}
+                                </ul>
+                            </div>
+                        </div>
                         <form action="/courses" onSubmit={this.handle_submit}>
                             <div>{this.input_JSX_Element("firstName", "text")}</div>
                             <div>{this.input_JSX_Element("lastName", "text")}</div>

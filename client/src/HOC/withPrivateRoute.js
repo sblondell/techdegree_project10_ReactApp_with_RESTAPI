@@ -1,33 +1,21 @@
 import React from 'react'
-import {Route, Redirect, Link} from 'react-router-dom';
+import {Route, Redirect} from 'react-router-dom';
 
 
 
 const withPrivateRoute = WrappedComponent => {
     class WithPrivateRoute extends React.Component {
-        constructor(props) {
-            super(props);
-        
-            this.state = {
-                 
-            }
-        }
-
-        get_out = () => {
-            this.props.props.history.push("/signin");
-        }
         
         render() {
-            const {userState} = this.props.props;
-            console.log(userState);
+            const {loggedIn} = this.props;
 
-            return <Route render={() => {
-                    if (userState.loggedIn) {
-                        return <WrappedComponent {...this.props} />;
-                    } else {
-                        return <Redirect from="/courses" to="/signin" />;
-                    }
-                }}/>;
+            // If user is not logged in, store the location of the page they came from, so they can be redirected to it after signing in
+            if (!this.props.loggedIn) {
+                const prevLocation = this.props.location.pathname;
+                sessionStorage.setItem('previousLocation', prevLocation);
+            }
+
+            return <Route render={() => loggedIn ? <WrappedComponent {...this.props} /> : <Redirect to="/signin" />} />;
         }
     }
     return WithPrivateRoute;

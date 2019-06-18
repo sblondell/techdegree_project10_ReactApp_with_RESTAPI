@@ -13,30 +13,34 @@ async function authenticateUser (req, res, next) {
     // Strip the user's credentials from the Authorization header.
     const credentials = auth(req);
 
-    // If the user's credentials are available...
-    if (credentials) {
-        // Attempt to retrieve the user from the data store by their username (i.e. the user's "key"
-        // from the Authorization header).
-        await Users.find({emailAddress: credentials.name}, (err, users) => {
-            if (err){
-                res.status(401).json({message : "User not found"});
-            }else {
-                const user = users.map(user => {
-                    return bcryptjs.compareSync(credentials.pass, user.password) ? user : null;
-                });
-                if (user[0]) {
-                    [req.currentUser] = user;
-                    next();
+    try {
+        // If the user's credentials are available...
+        if (credentials) {
+            // Attempt to retrieve the user from the data store by their username (i.e. the user's "key"
+            // from the Authorization header).
+            await Users.find({emailAddress: credentials.name}, (err, users) => {
+                if (err){
+                    res.status(401).json({message : "User not found"});
                 }else {
-                    res.status(401).json({message : "Access denied"});
+                    const user = users.map(user => {
+                    // res.send({"cred": `${bcryptjs.hashSync(credentials.pass)} and ${user.password}`});
+                        return bcryptjs.compareSync(credentials.pass, user.password) ? user : null;
+                    });
+                    if (user[0]) {
+                        [req.currentUser] = user;
+                        next();
+                    }else {
+                        res.status(401).json({message : "Access denied"});
+                    }
                 }
-            }
-        });
-    }else {
-        res.status(401).json({message : "Authentication Header not found"});
+            });
+        }else {
+            res.status(401).json({message : "Authentication Header not found"});
+        }
+    } catch (err) {
+        res.status(401).json({message: "Access denied"});
     }
 };
-
 
 
 // GET request to /api/users

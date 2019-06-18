@@ -2,10 +2,19 @@ import React, {Component} from 'react';
 import {BrowserRouter, Switch, Route, Redirect} from 'react-router-dom';
 
 import Header from './components/Header.js';
+
 import Courses from './components/Courses.js';
+import CourseDetail from './components/CourseDetail.js';
+import UpdateCourse from './components/UpdateCourse.js';
+import CreateCourse from './components/CreateCourse.js';
+
 import UserSignIn from './components/UserSignIn.js';
 import UserSignUp from './components/UserSignUp.js';
 import UserSignOut from './components/UserSignOut.js';
+
+import UnhandledError from './components/errors/UnhandledError.js';
+import NotFound from './components/errors/NotFound.js';
+import Forbidden from './components/errors/Forbidden.js';
 
 
 
@@ -16,6 +25,10 @@ class App extends Component {
             loggedIn: false,
             currentUser: {}
         };
+    }
+
+    componentDidMount = () => {
+        this.if_user_load_user();
     }
 
     sign_in = (userName, password) => {
@@ -33,14 +46,20 @@ class App extends Component {
 
         fetch(myRequest)
             .then(res => {
-                if (res.status === 200) {
-                    res.json()
-                        .then(res => this.setState(
-                            {loggedIn: true,
-                            currentUser: res}));
-                } else {
-                    return res;
+                if (!document.cookie) {
+                    // set cookie
+                    document.cookie = `user=${userName},${password}`;
                 }
+
+                return res.json().then(res => {
+                    console.log("REACT    ");
+                    console.dir(res);
+                            res.password = password;
+                            this.setState({loggedIn: true, currentUser: res});
+                })
+            })
+            .catch (err => {
+                console.error("There was a problem: " + err);
             });
     }
 
@@ -48,20 +67,42 @@ class App extends Component {
         this.setState({loggedIn: false, currentUser: {}});
     }
 
+    if_user_load_user = () => {
+        const cookie = document.cookie.replace('user=', '');
+
+        if (cookie) {
+            let [userName, password] = cookie.split(',');
+
+            this.sign_in(userName, password);
+        }
+    }
+
+
     render() {
-        console.log("HIT");
+        // clear any previous session "cookies"
+        sessionStorage.clear();
         return (
             <div>
                 <BrowserRouter>
                     <Header loggedIn={this.state.loggedIn} currentUser={this.state.currentUser} />
                     <Switch>
-                        <Route exact path="/" render={() => <Redirect to="/courses" />} />
-                        <Route path="/courses" render={ routeProps => <Courses props={{userState: this.state, ...routeProps}} />} />
-                        {/* <Route path="/courses" component={Courses} /> */}
-                        <Route path="/signin" render={ routeProps => <UserSignIn history={routeProps.history} sign_in={this.sign_in}/>} />
-                        <Route path="/signup" render={ routeProps => <UserSignUp history={routeProps.history} sign_in={this.sign_in}/>} />
-                        <Route path="/signout" render={ routeProps => <UserSignOut history={routeProps.history} sign_out={this.sign_out}/>} />
-                        {/* <Route render={() => <p>404</p>} /> */}
+                        <Route exact path="/courses" render={() => <Redirect to="/" />} />
+                        <Route exact path="/" component={Courses} />
+                        <Route exact path="/courses/create"
+                            render={ routeProp => <CreateCourse {...this.state} {...routeProp} />} />
+                        <Route exact path="/courses/:course_id/update"
+                            render={ routeProp => <UpdateCourse {...this.state} {...routeProp} />} />
+                        <Route exact path="/courses/:course_id"
+                            render={ routeProp => <CourseDetail {...this.state} {...routeProp} />} />
+
+                        <Route path="/signin" render={ routeProps => this.state.loggedIn ? <Redirect to="/courses" /> : <UserSignIn {...routeProps} sign_in={this.sign_in} />} />
+                        <Route path="/signup" render={ routeProps => <UserSignUp {...routeProps} sign_in={this.sign_in} />} />
+                        <Route path="/signout" render={ routeProps => <UserSignOut {...routeProps} sign_out={this.sign_out} />} />
+
+                        <Route path="/error" component={UnhandledError} />
+                        <Route path="/forbidden" component={Forbidden} />
+                        <Route path="/notfound" component={NotFound} />
+                        <Route component={NotFound} />
                     </Switch>
                 </BrowserRouter>
             </div>

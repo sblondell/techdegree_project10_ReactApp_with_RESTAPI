@@ -1,9 +1,9 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import {NavLink} from 'react-router-dom';
 
 
 const Header = props => {
-    function user_logged_in () {
+    function is_user_logged_in () {
         if (props.loggedIn) {
             return (
                 <nav>
@@ -25,7 +25,7 @@ const Header = props => {
         <div className="header">
             <div className="bounds">
                 <h1 className="header--logo"><NavLink to='/'>Courses</NavLink></h1>
-                {user_logged_in()}
+                {is_user_logged_in()}
             </div>
         </div>
     );

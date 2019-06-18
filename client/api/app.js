@@ -23,7 +23,8 @@ app.use(cors());
 
 // Connect mongoose to the mongo database
 var db = mongoose.connection;
-mongoose.connect("mongodb://localhost:27017/fsjstd-restapi");
+mongoose.connect("mongodb://localhost:27017/fsjstd-restapi", { useNewUrlParser: true });
+
 db.on("error", err => {
     console.log("Error connecting to mongoDB: " + err);
 });

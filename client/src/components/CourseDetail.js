@@ -1,5 +1,8 @@
-import React, { Component } from 'react';
+import React, {Component} from 'react';
 import {NavLink} from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+
+
 
 class CourseDetail extends Component {
     constructor() {
@@ -25,16 +28,57 @@ class CourseDetail extends Component {
         let courseId = this.props.match.params.course_id;
 
         fetch(`http://localhost:5000/api/courses/${courseId}`)
-            .then(res => res.json())
-            .then(res => this.setState(({courseDetails: res})))
-            .catch(err => err);
+            .then(res => {
+                if (res.status === 200) {
+                    return res.json();
+                } else if (res.status === 500) {
+                    this.props.history.push("/error");
+                    let err = new Error();
+
+                    err.name = "Internal Server Error";
+                    err.message = "Status Code: 500";
+                    throw err;
+                } else {
+                    this.props.history.push("/notfound");
+                }
+            })
+            .then(res => this.setState({courseDetails: res}))
+            .catch(err => {
+                console.error("There was a problem: " + err);
+            });
     }
 
-    delete_course = courseId => {
-        fetch(`http://localhost:5000/api/courses/${this.state.courseDetails.course._id}`, {
-            method: 'DELETE'
-        }).then(res => res)
-        .catch((err, next) => next(err));
+    delete_course = e => {
+        e.preventDefault();
+
+        if (this.props.loggedIn) {
+            const userName = this.props.currentUser.emailAddress;
+            const password = this.props.currentUser.password;
+            const _64encoded_userAndPass = window.btoa(`${userName}:${password}`);
+
+            const myHeader = new Headers({
+                withCredentials: true,
+                Authorization: "Basic " + _64encoded_userAndPass
+            });
+
+            const myRequest = new Request(`http://localhost:5000/api/courses/${this.state.courseDetails.course._id}`, {
+                method: 'DELETE',
+                headers: myHeader
+            });
+
+            fetch(myRequest)
+                .then(res => {
+                    if (res.status === 204) this.props.history.push("/courses");
+                }).catch(err => {
+                    console.error("There was a problem: " + err);
+                });
+        } else {
+            this.props.history.push("/signin");
+        }
+    }
+
+    should_hide = () => {
+        return (this.state.courseDetails.course.user === this.props.currentUser._id) ? { display: '' } : { display: 'none' };
     }
 
     render() {
@@ -47,10 +91,10 @@ class CourseDetail extends Component {
                 <div className="bounds">
                     <div className="grid-100">
                         <span>
-                            <NavLink className="button" to={`/courses/${course._id}/update`}>Update Course</NavLink>
-                            <a className="button" href="/#" onClick={this.delete_course}>Delete Course</a>
+                            <NavLink style={this.should_hide()} className="button" to={`/courses/${course._id}/update`}>Update Course</NavLink>
+                            <NavLink style={this.should_hide()} className="button" to="/" onClick={this.delete_course}>Delete Course</NavLink>
                         </span>
-                        <a className="button button-secondary" href="/">Return to List</a>
+                        <NavLink className="button button-secondary" to="/">Return to List</NavLink>
                     </div>
                 </div>
             </div>
@@ -62,7 +106,7 @@ class CourseDetail extends Component {
                         <p>By {user.firstName} {user.lastName}</p>
                     </div>
                     <div className="course--description">
-                        <p>{course.description}</p>
+                        <ReactMarkdown escapeHtml={true} source={course.description} />
                     </div>
                 </div>
                 <div className="grid-25 grid-right">
@@ -75,7 +119,7 @@ class CourseDetail extends Component {
                         <li className="course--stats--list--item">
                             <h4>Materials Needed</h4>
                             <ul>
-                                {courseMaterials.map((material, index) => <li key={index}>{material}</li>)}
+                                {courseMaterials.map((material, index) => <li key={index}><ReactMarkdown escapeHtml={true} source={material} /></li>)}
                             </ul>
                         </li>
                         </ul>
