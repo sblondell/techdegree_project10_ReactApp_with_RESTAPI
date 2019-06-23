@@ -26,11 +26,23 @@ class UpdateCourse extends Component {
     }
 
     componentDidMount() {
-        
         let courseId = this.props.match.params.course_id;
 
         fetch(`http://localhost:5000/api/courses/${courseId}`)
-            .then(res => res.status === 200 ? res.json() : this.props.history.push("/notfound"))
+            .then(res => {
+                if (res.status === 200) {
+                    return res.json();
+                } else if (res.status === 500) {
+                    this.props.history.push("/error");
+                    let err = new Error();
+
+                    err.name = "Internal Server Error";
+                    err.message = "Status Code: 500";
+                    throw err;
+                } else {
+                    this.props.history.push("/notfound");
+                }
+            })
             .then(res => this.setState({courseDetails: res}))
             .catch(err => {
                 console.error("There was a problem: " + err);
@@ -48,12 +60,13 @@ class UpdateCourse extends Component {
         const formData = Array.from(new FormData(e.target));
         let allowSubmit = true;
 
-        const title = formData[0][1]
-        const description = formData[1][1]
-        const estimatedTime = formData[2][1]
-        const emptyLinesRemoved_materials = formData[3][1].split("\n")
-                                                          .filter(material => /[A-Z0-9]+/i.test(material)) // Remove all empty values
-                                                          .join('\n');
+        const title = formData[0][1];
+        const description = formData[1][1];
+        const estimatedTime = formData[2][1];
+        const materialsNeeded = formData[3][1];
+        // const emptyLinesRemoved_materials = formData[3][1].split("\n")
+        //                                                   .filter(material => /[A-Z0-9]+/i.test(material)) // Remove all empty values
+        //                                                   .join('\n');
 
 
         const newCourseDetails = {
@@ -61,18 +74,19 @@ class UpdateCourse extends Component {
                 title,
                 description ,
                 estimatedTime,
-                "materialsNeeded": emptyLinesRemoved_materials
+                // "materialsNeeded": emptyLinesRemoved_materials
+                materialsNeeded
             }
         }
 
-        if (!title || !description || !estimatedTime || !emptyLinesRemoved_materials) {
+        // if (!title || !description || !estimatedTime || !emptyLinesRemoved_materials) {
+        if (!title || !description || !estimatedTime || !materialsNeeded) {
             allowSubmit = false;
             this.setState({ courseDetails: newCourseDetails, allValid: allowSubmit });
             return null;
         }
 
         this.update_course(newCourseDetails.course);
-
 
         // Had to set a timer, page was redirecting too fast and not allowing user to see their course displayed on the landing page...
         setTimeout(() => {
@@ -99,7 +113,25 @@ class UpdateCourse extends Component {
 
         console.log(course);
         fetch(myRequest)
-            .then(res => res.status !== 204 ? this.props.history.push("/forbidden") : null)
+            .then(res => {
+                if (res.status === 500) {
+                    this.props.history.push("/error");
+                    let err = new Error();
+
+                    err.name = "Internal Server Error";
+                    err.message = "Status Code: 500";
+                    throw err;
+                } else if (res.status !== 204) {
+                    this.props.history.push("/forbidden");
+                } else {
+                    let courseId = this.props.match.params.course_id;
+
+                    // Had to set a timer, page was redirecting too fast and not allowing user to see their changes...
+                    setTimeout(() => {
+                        this.props.history.push(`/courses/${courseId}`);
+                    }, 500);
+                }
+            })
             .catch(err => console.error("There was a problem: " + err));
     }
 
@@ -196,7 +228,12 @@ class UpdateCourse extends Component {
                                 </li>
                                 <li className="course--stats--list--item">
                                     <h4>Materials Needed</h4>
-                                    <div><textarea id="materialsNeeded" name="materialsNeeded" className="" placeholder="List materials..." onChange={this.handle_textArea_change} value={ materialsNeeded }></textarea></div>
+                                    <div><textarea id="materialsNeeded"
+                                                   name="materialsNeeded"
+                                                   className=""
+                                                   placeholder="List materials..."
+                                                   onChange={this.handle_textArea_change}
+                                                   value={ materialsNeeded }></textarea></div>
                                 </li>
                             </ul>
                         </div>

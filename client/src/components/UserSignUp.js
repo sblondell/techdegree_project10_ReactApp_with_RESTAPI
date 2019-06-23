@@ -43,12 +43,21 @@ class UserSignUp extends Component {
             confirmPassword
         }
 
-        // if any sign up values are empty
-        if (!firstName || !lastName || !emailAddress || !password || !confirmPassword) {
+        // If any sign up values are empty or invalid email address, do not submit form
+        if (!firstName || !lastName || !emailAddress || !password || !confirmPassword 
+            || !(/^[0-9a-z]+@[0-9a-z]+\.[a-z]{3}$/i.test(emailAddress))) {
             allowSubmit = false;
             this.setState({ pendingNewUser: newUser, allValid: allowSubmit});
             return null;
         }
+
+        // If passwords don't match, do not submit form
+        if (password !== confirmPassword) {
+            allowSubmit = false;
+            this.setState({ pendingNewUser: newUser, allValid: allowSubmit});
+            return null;
+        }
+
 
         const myHeader = new Headers({
             "Content-Type": "application/json"
@@ -65,6 +74,19 @@ class UserSignUp extends Component {
                 if (res.status === 200) {
                     this.props.sign_in(newUser.emailAddress, newUser.password);
 		            this.props.history.push("/courses");
+                } else if (res.status === 500) {
+                    this.props.history.push("/error");
+                    let err = new Error();
+
+                    err.name = "Internal Server Error";
+                    err.message = "Status Code: 500";
+                    throw err;
+                } else {
+                    this.props.history.push("/signup");
+                    let err = new Error();
+
+                    err.message = res.message;
+                    throw err;
                 }
             }).catch(err => {
                 console.error("There was a problem: " + err);
@@ -118,8 +140,8 @@ class UserSignUp extends Component {
         let uniqueIndexKey = 0;
         const pendingUserKeys = Object.keys(formObject);
 
+        // Required fields not filled in...
         if (!this.state.allValid) {
-            // Generate "input required" validation messages
             pendingUserKeys.forEach(key => {
                 let inputName = formObject[key];
 
@@ -130,8 +152,12 @@ class UserSignUp extends Component {
                 }
             });
 
+            // Passwords do not match...
             if (formObject.password !== formObject.confirmPassword)
-                customValidationMessages.push(<li key={uniqueIndexKey}>Password and Confirmed Password do not match.</li>);
+                customValidationMessages.push(<li key={uniqueIndexKey}>Passwords do not match.</li>);
+            // Invalid email address...
+            if(!(/^[0-9a-z]+@[0-9a-z]+\.[a-z]{3}$/i.test(formObject.emailAddress)))
+                customValidationMessages.push(<li key={uniqueIndexKey+1}>Invalid Email Address.</li>);
         }
 
         return customValidationMessages;
@@ -147,11 +173,6 @@ class UserSignUp extends Component {
                             <div className="validation-errors">
                                 <ul>
                                     {this.generate_validation_errors(this.state.pendingNewUser)}
-                                {/* <li style={this.should_hide("firstName")}>Please provide your First Name</li>
-                                <li style={this.should_hide("lastName")}>Please provide your Last Name</li>
-                                <li style={this.should_hide("emailAddress")}>Please provide an Email Address</li>
-                                <li style={this.should_hide("password")}>Please provide a Password</li>
-                                <li style={this.should_hide("confirmPassword")}>Please confirm your Password</li> */}
                                 </ul>
                             </div>
                         </div>

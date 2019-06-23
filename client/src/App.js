@@ -46,17 +46,30 @@ class App extends Component {
 
         fetch(myRequest)
             .then(res => {
-                if (!document.cookie) {
-                    // set cookie
-                    document.cookie = `user=${userName},${password}`;
-                }
+                if (res.status === 200) {
+                    if (!document.cookie) {
+                        // set cookie
+                        document.cookie = `user=${userName},${password}`;
+                    }
 
-                return res.json().then(res => {
-                    console.log("REACT    ");
-                    console.dir(res);
-                            res.password = password;
-                            this.setState({loggedIn: true, currentUser: res});
-                })
+                    return res.json().then(res => {
+                                res.password = password;
+                                this.setState({loggedIn: true, currentUser: res});
+                    });
+                } else if (res.status === 500) {
+                    window.location.pathname = "/error";
+                    let err = new Error();
+
+                    err.name = "Internal Server Error";
+                    err.message = "Status Code: 500";
+                    throw err;
+                } else {
+                    window.location.pathname = "/courses";
+                    let err = new Error();
+
+                    err.message = res.message;
+                    throw err;
+                }
             })
             .catch (err => {
                 console.error("There was a problem: " + err);

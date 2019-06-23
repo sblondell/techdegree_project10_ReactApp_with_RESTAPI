@@ -41,13 +41,13 @@ class UserSignIn extends Component {
                                         name="emailAddress"
                                         type="text"
                                         placeholder="Email Address"
-                                        required ref={input => this.query = {emailAddress: input}}
+                                        // required ref={input => this.query = {emailAddress: input}}
                             /></div>
                             <div><input id="password"
                                         name="password"
                                         type="password"
                                         placeholder="Password"
-                                        required ref={input => this.query = {...this.query, password: input}}
+                                        // required ref={input => this.query = {...this.query, password: input}}
                             /></div>
                             <div className="grid-100 pad-bottom">
                                 <button className="button" type="submit">Sign In</button>

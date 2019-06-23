@@ -32,24 +32,28 @@ class CreateCourse extends Component {
         const formData = Array.from(new FormData(e.target));
         let allowSubmit = true;
 
-        const title = formData[0][1]
-        const description = formData[1][1]
-        const estimatedTime = formData[2][1]
-        const emptyLinesRemoved_materials = formData[3][1].split("\n")
-                                                          .filter(material => /[A-Z0-9]+/i.test(material)) // Remove all empty values
-                                                          .join('\n');
+        const title = formData[0][1];
+        const description = formData[1][1];
+        const estimatedTime = formData[2][1];
+        const materialsNeeded = formData[3][1];
 
+        // // old version of program where "materials needed" was processed as an array...
+        // const emptyLinesRemoved_materials = formData[3][1].split("\n")
+        //                                                   .filter(material => /[A-Z0-9]+/i.test(material)) // Remove all empty values
+        //                                                   .join('\n');
                                                           
         const newCourseDetails = {
             course: {
                 title,
                 description ,
                 estimatedTime,
-                "materialsNeeded": emptyLinesRemoved_materials
+                // "materialsNeeded": emptyLinesRemoved_materials
+                materialsNeeded
             }
         }
 
-        if (!title || !description || !estimatedTime || !emptyLinesRemoved_materials) {
+        // if (!title || !description || !estimatedTime || !emptyLinesRemoved_materials) {
+        if (!title || !description || !estimatedTime || !materialsNeeded) {
             allowSubmit = false;
             this.setState({ courseDetails: newCourseDetails, allValid: allowSubmit});
             return null;
@@ -80,7 +84,20 @@ class CreateCourse extends Component {
             body: JSON.stringify(course)
         });
 
-        fetch(myRequest).catch(err => console.error("There was a problem: " + err));
+        fetch(myRequest)
+            .then(res => {
+                if (res.status === 500) {
+                    this.props.history.push("/error");
+                    let err = new Error();
+
+                    err.name = "Internal Server Error";
+                    err.message = "Status Code: 500";
+                    throw err;
+                } else {
+                    this.props.history.push("/courses");
+                }
+            })
+            .catch(err => console.error("There was a problem: " + err));
     }
 
     /*

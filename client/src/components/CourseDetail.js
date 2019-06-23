@@ -68,7 +68,18 @@ class CourseDetail extends Component {
 
             fetch(myRequest)
                 .then(res => {
-                    if (res.status === 204) this.props.history.push("/courses");
+                    if (res.status === 204) {
+                        this.props.history.push("/courses");
+                    } else if (res.status === 500) {
+                        this.props.history.push("/error");
+                        let err = new Error();
+
+                        err.name = "Internal Server Error";
+                        err.message = "Status Code: 500";
+                        throw err;
+                    } else {
+                        this.props.history.push("/notfound");
+                    }
                 }).catch(err => {
                     console.error("There was a problem: " + err);
                 });
@@ -83,7 +94,7 @@ class CourseDetail extends Component {
 
     render() {
         let {user, course} = this.state.courseDetails;
-        let courseMaterials = course.materialsNeeded ? course.materialsNeeded.split("\n") : [];
+        // let courseMaterials = course.materialsNeeded ? course.materialsNeeded.split("\n") : [];
 
         return (
             <div>
@@ -118,9 +129,10 @@ class CourseDetail extends Component {
                             </li>
                         <li className="course--stats--list--item">
                             <h4>Materials Needed</h4>
-                            <ul>
+                                <ReactMarkdown escapeHtml={true} source={course.materialsNeeded} />
+                            {/* <ul>
                                 {courseMaterials.map((material, index) => <li key={index}><ReactMarkdown escapeHtml={true} source={material} /></li>)}
-                            </ul>
+                            </ul> */}
                         </li>
                         </ul>
                     </div>
