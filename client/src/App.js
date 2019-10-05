@@ -46,6 +46,7 @@ class App extends Component {
 
         fetch(myRequest)
             .then(res => {
+                console.log(res.status);
                 if (res.status === 200) {
                     if (!document.cookie) {
                         // set cookie
@@ -64,7 +65,6 @@ class App extends Component {
                     err.message = "Status Code: 500";
                     throw err;
                 } else {
-                    window.location.pathname = "/courses";
                     let err = new Error();
 
                     err.message = res.message;
@@ -72,7 +72,7 @@ class App extends Component {
                 }
             })
             .catch (err => {
-                console.error("There was a problem: " + err);
+                console.log(err);
             });
     }
 
