@@ -19,18 +19,14 @@ app.use(morgan('dev'));
 app.use(cors());
 
 // Initiate the json body parser
- app.use(jsonParser());
+app.use(jsonParser());
 
 // Connect mongoose to the mongo database
-var db = mongoose.connection;
-mongoose.connect("mongodb://localhost:27017/fsjstd-restapi", { useNewUrlParser: true });
+mongoose.connect("mongodb://heroku_client_guest:candyj00n@ds331548.mlab.com:31548/heroku_hhxc573d",
+  {
+    useNewUrlParser: true
+  });
 
-db.on("error", err => {
-    console.log("Error connecting to mongoDB: " + err);
-});
-db.once("open", () => {
-    console.log("MongoDB connection successful.");
-});
 
 // TODO setup your api routes here
 app.use('/api', routes);

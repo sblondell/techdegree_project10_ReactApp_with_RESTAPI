@@ -9,7 +9,7 @@ const Users = require('../models/models.js').Users;
 const Courses = require('../models/models.js').Courses;
 
 
-async function authenticateUser (req, res, next) {
+async function authenticateUser(req, res, next) {
     // Strip the user's credentials from the Authorization header.
     const credentials = auth(req);
 
@@ -18,27 +18,27 @@ async function authenticateUser (req, res, next) {
         if (credentials) {
             // Attempt to retrieve the user from the data store by their username (i.e. the user's "key"
             // from the Authorization header).
-            await Users.find({emailAddress: credentials.name}, (err, users) => {
-                if (err){
-                    res.status(401).json({message : "User not found"});
-                }else {
+            await Users.find({ emailAddress: credentials.name }, (err, users) => {
+                if (err) {
+                    res.status(401).json({ message: "User not found" });
+                } else {
                     const user = users.map(user => {
-                    // res.send({"cred": `${bcryptjs.hashSync(credentials.pass)} and ${user.password}`});
+                        // res.send({"cred": `${bcryptjs.hashSync(credentials.pass)} and ${user.password}`});
                         return bcryptjs.compareSync(credentials.pass, user.password) ? user : null;
                     });
                     if (user[0]) {
                         [req.currentUser] = user;
                         next();
-                    }else {
-                        res.status(401).json({message : "Access denied"});
+                    } else {
+                        res.status(401).json({ message: "Access denied" });
                     }
                 }
             });
-        }else {
-            res.status(401).json({message : "Authentication Header not found"});
+        } else {
+            res.status(401).json({ message: "Authentication Header not found" });
         }
     } catch (err) {
-        res.status(401).json({message: "Access denied"});
+        res.status(401).json({ message: "Access denied" });
     }
 };
 
@@ -56,7 +56,7 @@ router.post('/users', async (req, res, next) => {
 
     //Email validation and duplication check...
     if (/[a-z0-9]+@[a-z0-9]+\.[a-z0-9]{3}/i.test(req.body.emailAddress)) {
-        await Users.findOne({emailAddress: req.body.emailAddress}, (err, user) => {
+        await Users.findOne({ emailAddress: req.body.emailAddress }, (err, user) => {
             if (err) return next(err);
             if (user) {
                 permitAddingUser = false;
@@ -67,7 +67,7 @@ router.post('/users', async (req, res, next) => {
                 return;
             }
         });
-    }else {
+    } else {
         permitAddingUser = false;
         const error = new Error("Invalid email address");
 
@@ -95,13 +95,11 @@ router.post('/users', async (req, res, next) => {
 // returns a list of courses; status: 200
 router.get('/courses', (req, res, next) => {
     Courses.find()
-        .exec((err, courses) => {
-        if (err) {
-            return next(err);
-        }else {
-            res.status(200).json(courses);
-        }
-    });
+        .exec()
+        .then(doc => {
+            res.status(200).json(doc);
+        })
+        .catch(err => console.log(err));
 });
 
 // GET request to /api/courses/:id
@@ -110,15 +108,15 @@ router.get('/courses/:id', (req, res, next) => {
     Courses.findById(req.params.id, (err, course) => {
         if (err) {
             return next(err);
-        }else {
+        } else {
             if (!course) {
-                res.status(404).json({message : "Course not found"});
-            }else {
+                res.status(404).json({ message: "Course not found" });
+            } else {
                 Users.findById(course.user, (err, user) => {
                     if (err) {
                         return next(err);
-                    }else {
-                        res.status(200).json({user, course});
+                    } else {
+                        res.status(200).json({ user, course });
                     }
                 });
             }
@@ -147,8 +145,8 @@ router.put('/courses/:id', authenticateUser, async (req, res, next) => {
         if (err) return next(err);
 
         if (!course) {
-            res.status(404).json({message : "Course not found"});
-        }else {
+            res.status(404).json({ message: "Course not found" });
+        } else {
             if (req.currentUser._id.toString() === course.user.toString()) { // Check to make sure the current user owns the course...
                 course.title = req.body.title ? req.body.title : null;
                 course.description = req.body.description ? req.body.description : null;
@@ -163,7 +161,7 @@ router.put('/courses/:id', authenticateUser, async (req, res, next) => {
                     if (err) return next(err);
                     res.status(204).json();
                 });
-            }else {
+            } else {
                 res.status(403).json();
             }
         }
@@ -183,14 +181,14 @@ router.delete('/courses/:id', authenticateUser, (req, res, next) => {
         if (err) return next(err);
 
         if (!course) {
-            res.status(404).json({message : "Course not found"});
-        }else {
+            res.status(404).json({ message: "Course not found" });
+        } else {
             if (req.currentUser._id.toString() === course.user.toString()) { // Check to make sure the current user owns the course...
-                Courses.findOneAndDelete({"_id" : req.params.id}, err => {
+                Courses.findOneAndDelete({ "_id": req.params.id }, err => {
                     if (err) return next(err);
                     res.status(204).json();
                 });
-            }else {
+            } else {
                 res.status(403).json();
             }
         }
